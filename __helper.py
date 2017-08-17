@@ -25,6 +25,18 @@ def checkMonHealth():
 		return True
 
 
+def checkPgHealth():
+	global API_URL_STATUS
+	response_json = __callApi(API_URL_STATUS)
+	
+	if 'cephStatus' in response_json and 'pgmap' in response_json['cephStatus'] and 'pgs_by_state' in response_json['cephStatus']['pgmap']:
+		pgstates = response_json['cephStatus']['pgmap']['pgs_by_state']
+		for element in pgstates:
+			if 'state_name' in element and element['state_name'] != 'active+clean':
+				return False;
+	return True;
+
+
 # service can be 'mon', 'osd', 'mds', 'nfs', 'rgw'
 def getServersWithService(service='mon'):
 	global API_URL_SERVERS

@@ -7,8 +7,8 @@ from __helper import *
 host_list = getAllServers()
 
 for srv in host_list:
-	while not checkMonHealth():
-		print "waiting (15s) for mon health ..."
+	while not checkMonHealth() or not checkPgHealth():
+		print "waiting (15s) for MON and PG health ..."
 		time.sleep(15)
 
 	# status is now healthy
