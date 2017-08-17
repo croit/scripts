@@ -10,8 +10,6 @@ import requests
 
 def checkMonHealth():
 	global API_URL_STATUS
-	#r = requests.get(API_URL_STATUS)
-	#response_json = r.json()
 	response_json = __callApi(API_URL_STATUS)
 	
 	count_max = 0
@@ -25,6 +23,7 @@ def checkMonHealth():
 		return False
 	else:
 		return True
+
 
 # service can be 'mon', 'osd', 'mds', 'nfs', 'rgw'
 def getServersWithService(service='mon'):
@@ -42,6 +41,7 @@ def getServersWithService(service='mon'):
 				ip_list.append(element['ip'])
 	return ip_list
 
+
 def getMonList():
 	global API_URL_STATUS
 	response_json = __callApi(API_URL_STATUS)
@@ -55,6 +55,17 @@ def getMonList():
 	else:
 		print "mons not found in status response from " + API_URL_STATUS
 		return False
+
+
+def getAllServers():
+	global API_URL_SERVERS
+	response_json = __callApi(API_URL_SERVERS)
+	ip_list = []
+	for element in response_json:
+		if 'ip' in element:
+			ip_list.append(element['ip'])
+	return ip_list
+
 
 def __callApi(url):
 	r = requests.get(url)
