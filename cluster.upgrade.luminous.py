@@ -65,6 +65,7 @@ for srv in rgw_list:
 	executeSshCommand(srv, "systemctl restart radosgw.target")
 
 
+executeShellCommand('ceph osd require-osd-release luminous')
 executeShellCommand('ceph osd unset noout')
 
 print "Cluster upgrade done"
