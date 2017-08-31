@@ -9,7 +9,7 @@ def executeSshCommand(host, cmd):
 
 def executeShellCommand(cmd):
 	# return subprocess.call(['docker', 'exec', '-it', 'croit', 'bash', '-c', cmd])
-	return subprocess.call(cmd)
+	return subprocess.call(['bash', '-c', cmd])
 
 
 if not checkMonHealth() or not checkPgHealth():
@@ -19,6 +19,8 @@ if not checkMonHealth() or not checkPgHealth():
 # prepare cluster
 executeShellCommand('ceph osd set sortbitwise')
 executeShellCommand('ceph osd set noout')
+executeShellCommand("sed -i -- 's/debian-kraken/debian-luminous/g' /etc/apt/sources.list")
+executeShellCommand("apt-get -y update && apt-get -y dist-upgrade")
 
 mon_list = getServersWithService('mon')
 osd_list = getServersWithService('osd')
@@ -32,7 +34,6 @@ for srv in all_hosts:
 	# update preferences
 	executeSshCommand(srv, "sed -i -- 's/debian-kraken/debian-luminous/g' /etc/apt/sources.list")
 	executeSshCommand(srv, "apt-get -y update && apt-get -y dist-upgrade")
-	
 
 # MON
 for srv in mon_list:
