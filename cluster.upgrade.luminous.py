@@ -4,10 +4,12 @@ from __helper import *
 import subprocess
 
 def executeSshCommand(host, cmd):
-	return subprocess.call(['docker', 'exec', '-it', 'croit', 'ssh', '-o', 'BatchMode yes', '-o', 'StrictHostKeyChecking no', host, cmd])
+	# return subprocess.call(['docker', 'exec', '-it', 'croit', 'ssh', '-o', 'BatchMode yes', '-o', 'StrictHostKeyChecking no', host, cmd])
+	return subprocess.call(['ssh', '-o', 'BatchMode yes', '-o', 'StrictHostKeyChecking no', host, cmd])
 
 def executeShellCommand(cmd):
-	return subprocess.call(['docker', 'exec', '-it', 'croit', 'bash', '-c', cmd])
+	# return subprocess.call(['docker', 'exec', '-it', 'croit', 'bash', '-c', cmd])
+	return subprocess.call(cmd)
 
 
 if not checkMonHealth() or not checkPgHealth():
