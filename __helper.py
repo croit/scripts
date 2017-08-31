@@ -4,13 +4,31 @@
 API_URL_STATUS  	= 'http://localhost:8080/api/cli/status'
 API_URL_SERVERS 	= 'http://localhost:8080/api/cli/servers'
 API_URL_SERVICES 	= 'http://localhost:8080/api/cli/services'
+API_URL_LOGIN	 	= 'http://localhost:8080/api/auth/login-form'
 
 import json
 import requests
 
+# API token cache
+api_auth_token = ''
+
+def adminLogin():
+	global API_URL_LOGIN, api_auth_token
+	username = raw_input("Username: ")
+	password = raw_input("Password: ")
+	response = requests.post(API_URL_LOGIN, {'grant_type': 'password', 'username': username, 'password': password}, {'Content-Type':'application/json'}).json()
+	if 'access_token' in response and 'access_token' in response:
+		api_auth_token = response['token_type'] + ' ' + response['access_token']
+		with open(".api_token", "w") as token_file:
+			token_file.write(api_auth_token)
+		return response
+	else:
+		return False
+
+
 def checkMonHealth():
 	global API_URL_STATUS
-	response_json = __callApi(API_URL_STATUS)
+	response_json = __CallCliApi(API_URL_STATUS)
 	
 	count_max = 0
 	count_cur = 0
@@ -27,7 +45,7 @@ def checkMonHealth():
 
 def checkPgHealth():
 	global API_URL_STATUS
-	response_json = __callApi(API_URL_STATUS)
+	response_json = __CallCliApi(API_URL_STATUS)
 	
 	if 'cephStatus' in response_json and 'pgmap' in response_json['cephStatus'] and 'pgs_by_state' in response_json['cephStatus']['pgmap']:
 		pgstates = response_json['cephStatus']['pgmap']['pgs_by_state']
@@ -40,7 +58,7 @@ def checkPgHealth():
 # service can be 'mon', 'osd', 'mds', 'nfs', 'rgw'
 def getServersWithService(service='mon'):
 	global API_URL_SERVERS
-	response_json = __callApi(API_URL_SERVERS)
+	response_json = __CallCliApi(API_URL_SERVERS)
 	ip_list = []
 	for element in response_json:
 		if service == 'osd':
@@ -56,7 +74,7 @@ def getServersWithService(service='mon'):
 
 def getMonList():
 	global API_URL_STATUS
-	response_json = __callApi(API_URL_STATUS)
+	response_json = __CallCliApi(API_URL_STATUS)
 	mon_list = []
 	if 'cephStatus' in response_json and 'monmap' in response_json['cephStatus'] and 'mons' in response_json['cephStatus']['monmap']:
 		response_mon = response_json['cephStatus']['monmap']['mons']
@@ -71,7 +89,7 @@ def getMonList():
 
 def getAllServers():
 	global API_URL_SERVERS
-	response_json = __callApi(API_URL_SERVERS)
+	response_json = __CallCliApi(API_URL_SERVERS)
 	ip_list = []
 	for element in response_json:
 		if 'ip' in element:
@@ -79,7 +97,7 @@ def getAllServers():
 	return ip_list
 
 
-def __callApi(url):
+def __CallCliApi(url):
 	r = requests.get(url)
 	return r.json()
 	
