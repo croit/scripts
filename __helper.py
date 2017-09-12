@@ -1,5 +1,10 @@
 #!/usr/bin/python3
 
+# Copyright (C) <2017> <martin.verges@croit.io>
+#
+# This software may be modified and distributed under the terms
+# of the MIT license.  See the LICENSE file for details.
+
 # python constants are nonexisting, but here we go
 API_HOST					= 'http://localhost:8080/api'
 API_URL_CLI_STATUS  		= API_HOST + '/cli/status'
@@ -17,11 +22,33 @@ API_URL_TASK				= API_HOST + '/tasks/%d'
 
 import json
 import requests
+import subprocess
+import sys
 import time
 from requests.auth import HTTPBasicAuth
 
 # API token cache
 api_auth_token = ''
+
+def verifyCephCommand(require_version=None): # Regular Expression '\s((11|12).2.\d+)\s'
+	try:
+		output = subprocess.check_output(['bash', '-c', 'ceph version -f json || exit 0'])
+		version = json.loads(output)
+	except TypeError:
+		print("Please make sure that Ceph is executable!")
+		sys.exit(1)
+	else:
+		if require_version == None:
+			# no version check
+			return True
+		else:
+			if 'version' in version and re.search(require_version, version['version']) != None:
+				return True
+			else:
+				print("Your Ceph version issn't working for that script.")
+				sys.exit(1)
+
+
 
 def adminLogin():
 	global API_URL_LOGIN, api_auth_token
