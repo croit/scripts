@@ -21,7 +21,10 @@ API_URL_SERVER_SERVICES_MON	= API_HOST + '/servers/%d/services/mon'
 API_URL_TASK				= API_HOST + '/tasks/%d'
 
 import json
+import os
+import re
 import requests
+import shutil
 import subprocess
 import sys
 import time
@@ -31,22 +34,21 @@ from requests.auth import HTTPBasicAuth
 api_auth_token = ''
 
 def verifyCephCommand(require_version=None): # Regular Expression '\s((11|12).2.\d+)\s'
-	try:
-		output = subprocess.check_output(['bash', '-c', 'ceph version -f json || exit 0'])
-		version = json.loads(output)
-	except TypeError:
+	if shutil.which('ceph') == None:
 		print("Please make sure that Ceph is executable!")
 		sys.exit(1)
+
+	if require_version == None:
+		# no version check
+		return True
 	else:
-		if require_version == None:
-			# no version check
+		output = subprocess.check_output(['ceph', 'version', '-f', 'json'])
+		version = json.loads(output.decode('utf8'))
+		if 'version' in version and re.search(require_version, version['version']) != None:
 			return True
 		else:
-			if 'version' in version and re.search(require_version, version['version']) != None:
-				return True
-			else:
-				print("Your Ceph version issn't working for that script.")
-				sys.exit(1)
+			print("Your Ceph version issn't working for that script.")
+			sys.exit(1)
 
 
 
