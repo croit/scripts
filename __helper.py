@@ -104,9 +104,10 @@ def loadTokenFile():
 	finally:
 		token_file.close()
 	
-def getRequestHeaders():
+def getRequestHeaders(auth=True):
 	request_headers = {'Content-Type':'application/json'}
-	request_headers['Authorization'] = loadTokenFile()
+	if auth == True:
+		request_headers['Authorization'] = loadTokenFile()
 	return request_headers
 	
 def patchDisk(server_id, disk_id, data, wait=True):
@@ -146,17 +147,17 @@ def createOsd(server_id, disk_id, journal_disk_id=None, wait=True):
 	else:
 		return patchDisk(server_id, disk_id, {"role":"osd", "journalDisk": journal_disk_id}, wait)
 
-def deleteRequest(url, data):
-	return requests.delete(url, json=data, headers=getRequestHeaders())
+def deleteRequest(url, data={}, auth=True):
+	return requests.delete(url, json=data, headers=getRequestHeaders(auth))
 	
-def patchRequest(url, data):
-	return requests.patch(url, json=data, headers=getRequestHeaders())
+def patchRequest(url, data={}, auth=True):
+	return requests.patch(url, json=data, headers=getRequestHeaders(auth))
 
-def postRequest(url, data):
-	return requests.post(url, json=data, headers=getRequestHeaders())
+def postRequest(url, data={}, auth=True):
+	return requests.post(url, json=data, headers=getRequestHeaders(auth))
 
-def getRequest(url):
-	return requests.get(url, headers=getRequestHeaders())
+def getRequest(url, auth=True):
+	return requests.get(url, headers=getRequestHeaders(auth))
 
 def getServers():
 	global API_URL_SERVERS
@@ -242,9 +243,9 @@ def checkMonHealth():
 	
 	count_max = 0
 	count_cur = 0
-	if 'cephStatus' in response_json and 'monmap' in response_json['cephStatus'] and 'mons' in response_json['cephStatus']['monmap']:
+	if 'cephStatus' in response_json and response_json['cephStatus'] is dict and 'monmap' in response_json['cephStatus'] and 'mons' in response_json['cephStatus']['monmap']:
 		count_max = len(response_json['cephStatus']['monmap']['mons'])
-	if 'cephStatus' in response_json and 'quorum' in response_json['cephStatus']:
+	if 'cephStatus' in response_json and response_json['cephStatus'] is dict and 'quorum' in response_json['cephStatus']:
 		count_cur = len(response_json['cephStatus']['quorum'])
 
 	if count_cur != count_max:
@@ -257,7 +258,7 @@ def checkPgHealth():
 	global API_URL_CLI_STATUS
 	response_json = __CallCliApi(API_URL_CLI_STATUS)
 	
-	if 'cephStatus' in response_json and 'pgmap' in response_json['cephStatus'] and 'pgs_by_state' in response_json['cephStatus']['pgmap']:
+	if 'cephStatus' in response_json and response_json['cephStatus'] is dict and 'pgmap' in response_json['cephStatus'] and 'pgs_by_state' in response_json['cephStatus']['pgmap']:
 		pgstates = response_json['cephStatus']['pgmap']['pgs_by_state']
 		for element in pgstates:
 			if 'state_name' in element and element['state_name'] != 'active+clean':

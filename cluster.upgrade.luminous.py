@@ -98,10 +98,12 @@ for srv in rgw_list:
 executeShellCommand('ceph osd require-osd-release luminous')
 executeShellCommand('ceph osd unset noout')
 
-postRequest(API_HOST + '/cli/upgrade/luminous/update-image')
+postRequest(API_HOST + '/cli/upgrade/luminous/update-image', auth=False)
 
+print("\n\n")
 print('-------------------------------------')
 print('      cluster upgrade complete       ')
 print('-------------------------------------')
+print("\n\n")
 
 
