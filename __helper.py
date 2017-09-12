@@ -96,13 +96,19 @@ def writeTokenFile(token):
 
 def loadTokenFile():
 	global api_auth_token
-	token_file = open(".api_token", "r")
-	try:
-		ret = token_file.readline()
-		api_auth_token = ret.strip()
-		return api_auth_token
-	finally:
-		token_file.close()
+	if os.path.isfile(".api_token"):
+		try:
+			token_file = open(".api_token", "r")
+		except(IOError, OSError, Failure) as e:
+			return False
+		else:
+			try:
+				ret = token_file.readline()
+				api_auth_token = ret.strip()
+				return api_auth_token
+			finally:
+				token_file.close()
+	return False
 	
 def getRequestHeaders(auth=True):
 	request_headers = {'Content-Type':'application/json'}
