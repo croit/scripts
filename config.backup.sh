@@ -33,7 +33,7 @@ echo "create database backup from ${MYSQL_DATA}"
 [[ -z ${MYSQL_DATA} ]] && {echo "No MySQL/MariaDB data directory found"} || tar czf "${BACKUP_DIR}/db.tgz" -C "${MYSQL_DATA}" .
 
 # configuration backup
-echo "create config backup from ${MYSQL_DATA}"
+echo "create config backup from ${CONFIG_DATA}"
 [[ -z ${CONFIG_DATA} ]] && {echo "No croit config data directory found"} || tar czf "${BACKUP_DIR}/config.tgz" -C "${CONFIG_DATA}" .
 
 # save the container release tag
