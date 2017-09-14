@@ -12,6 +12,12 @@ import subprocess
 import sys
 import time
 
+print('This script will migrate your running cluster from Ceph Kraken (11.2) to Luminous (12.2)!')
+print('If you have any data on your servers, please make sure to backup them before executing this script!')
+if input('Do you want to upgrade the cluster (yes/no)? ') != 'yes':
+	print('breaking up')
+	sys.exit(1)
+
 def executeSshCommand(host, cmd):
 	# return subprocess.call(['docker', 'exec', '-it', 'croit', 'ssh', '-o', 'BatchMode yes', '-o', 'StrictHostKeyChecking no', host, cmd])
 	return subprocess.call(['ssh', '-o', 'BatchMode yes', '-o', 'StrictHostKeyChecking no', host, cmd])
