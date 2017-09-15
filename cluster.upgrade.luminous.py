@@ -98,7 +98,7 @@ for srv in mds_list:
 # RGW
 for srv in rgw_list:
 	print("upgrading RGW on " + srv + "... please wait!")
-	executeSshCommand(srv, "systemctl restart radosgw.service")
+	executeSshCommand(srv, "systemctl restart ceph-radosgw.target")
 
 
 executeShellCommand('ceph osd require-osd-release luminous')
