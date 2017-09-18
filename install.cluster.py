@@ -6,8 +6,8 @@
 # of the MIT license.  See the LICENSE file for details.
 
 # SETTINGS #
-MAIN_INTERFACE={"interfaceName":"ens19","ip":"10.22.1.2"}
-PXE_NETWORK={"ip":"10.22.1.0","netmask":"24","gateway":"","poolStart":"10.22.1.101","poolEnd":"10.22.1.110","type":"other","description":""}
+MAIN_INTERFACE={"interfaceName":"ens19","ip":"10.0.0.2"}
+PXE_NETWORK={"ip":"10.0.0.0","netmask":"24","gateway":"","poolStart":"10.0.0.101","poolEnd":"10.0.0.199","type":"other","description":""}
 MON_DISK='/dev/sda'
 OSD_DISKS=['/dev/vda','/dev/vdb','/dev/vdc','/dev/vdd']
 JOURNAL_DISK='/dev/sdb'
