@@ -100,15 +100,25 @@ for srv in rgw_list:
 	print("upgrading RGW on " + srv + "... please wait!")
 	executeSshCommand(srv, "systemctl restart ceph-radosgw.target")
 
+# This command can only run if every OSD is upgraded, therefore it will fail on clusters with defects
+try:
+	executeShellCommand('ceph osd require-osd-release luminous')
+except:
+	print("-------------------------------------------------------------------------------------")
+	print("You have at least one OSD that wasn't upgraded to luminous.")
+	print("Please consider rerunning this script or rebooting all hosts to complete the upgrade.")
+	print("When done, please run:")
+	print("		docker exec -it croit ceph osd require-osd-release luminous")
+	print("Thank you!");
+	print("-------------------------------------------------------------------------------------")
 
-executeShellCommand('ceph osd require-osd-release luminous')
 executeShellCommand('ceph osd unset noout')
 
 postRequest(API_HOST + '/cli/upgrade/luminous/update-image', auth=False)
 
 print("\n\n")
 print('-------------------------------------')
-print('      cluster upgrade complete       ')
+print('      cluster upgrade finished       ')
 print('-------------------------------------')
 print("\n\n")
 

@@ -15,13 +15,16 @@ host_list = getAllServers()
 
 for srv in host_list:
 	while not checkMonHealth() or not checkPgHealth():
-		print("waiting (15s) for MON and PG health ...")
+		print("waiting (15s) for MON and PG health to recover...")
 		time.sleep(15)
 
 	# status is now healthy
 	print("restarting host with ip " + srv + "... please wait!")
-	os.system("""ssh -o "BatchMode yes" -o "StrictHostKeyChecking no" """ + srv + """ reboot""")
-	time.sleep(120)
+	try:
+		os.system("""timeout 10s ssh -o "BatchMode yes" -o "StrictHostKeyChecking no" """ + srv + """ reboot""")
+	except:
+		print('ssh connection timeout, please wait')
+	time.sleep(45)
 
 
 
