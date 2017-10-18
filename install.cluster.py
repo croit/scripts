@@ -9,6 +9,7 @@
 MAIN_INTERFACE={"interfaceName":"ens19","ip":"10.0.0.2"}
 PXE_NETWORK={"ip":"10.0.0.0","netmask":"24","gateway":"","poolStart":"10.0.0.101","poolEnd":"10.0.0.199","type":"other","description":""}
 MON_DISK='/dev/sda'
+MON_MAX_COUNT=5
 OSD_DISKS=['/dev/vda','/dev/vdb','/dev/vdc','/dev/vdd']
 JOURNAL_DISK='/dev/sdb'
 JOURNAL_COUNT=len(OSD_DISKS)
@@ -112,9 +113,9 @@ for server in servers:
 			if 'id' in disk and 'path' in disk and disk['path'] == JOURNAL_DISK:
 				journal_disk_id = disk['id']
 				print('server #%d disk #%d (%s) will be a journal' % (server['id'], disk['id'], disk['path']))
-				if 'role' in disk and disk['role'] not in ['unassigned', 'deleting', 'journal']:
-					if disk['role'] == 'unassigned':
-						wipeDisk(server['id'], disk['id'], disk['serial'])
+				if 'role' in disk and disk['role'] not in ['unassigned', 'journal']:
+					wipeDisk(server['id'], disk['id'], disk['serial'])
+				if disk['role'] == 'unassigned':
 					createJournal(server['id'], disk['id'], JOURNAL_COUNT)
 
 		# install the disk as an OSD
@@ -130,7 +131,7 @@ for server in servers:
 
 # wait until all disks are done
 for lastDisk in changeList:
-	waitDiskState(lastDisk['server_id'], lastDisk['id'], 'osd', 60)
+	waitDiskState(lastDisk['server_id'], lastDisk['id'], 'osd', 600)
 
 		
 # INSTALL ADDITIONAL MONs
@@ -140,14 +141,18 @@ for server in servers:
 	disks = getRequest(API_HOST + '/servers/%d/disks' % server['id']).json()
 	if type(disks) is list and len(disks)>0:
 		for disk in disks:
-			if 'id' in disk and 'path' in disk and disk['path'] == MON_DISK:
-				if 'role' in disk and disk['role'] == 'mon':
-					print('server #%d disk #%d (%s) is already used for MON' % (server['id'], disk['id'], disk['path']))
-					createMonService(server['id'])
-				else:
-					if disk['role'] != 'unassigned':
-						wipeDisk(server['id'], disk['id'], disk['serial'])
-					createMon(server['id'], disk['id'])
+			mon_list = getServersWithService('mon')
+			if mon_list.count >= MON_MAX_COUNT:
+				print('maximum count (%d/%d) of MON services reached' % (mon_list.count, MON_MAX_COUNT))
+			else:
+				if 'id' in disk and 'path' in disk and disk['path'] == MON_DISK:
+					if 'role' in disk and disk['role'] == 'mon':
+						print('server #%d disk #%d (%s) is already used for MON' % (server['id'], disk['id'], disk['path']))
+						createMonService(server['id'])
+					else:
+						if disk['role'] != 'unassigned':
+							wipeDisk(server['id'], disk['id'], disk['serial'])
+						createMon(server['id'], disk['id'])
 
 
 # TODO: CRUSH MAP
