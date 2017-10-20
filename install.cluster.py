@@ -142,8 +142,8 @@ for server in servers:
 	if type(disks) is list and len(disks)>0:
 		for disk in disks:
 			mon_list = getServersWithService('mon')
-			if mon_list.count >= MON_MAX_COUNT:
-				print('maximum count (%d/%d) of MON services reached' % (mon_list.count, MON_MAX_COUNT))
+			if len(mon_list) >= MON_MAX_COUNT:
+				print('maximum count (%d/%d) of MON services reached' % (len(mon_list), MON_MAX_COUNT))
 			else:
 				if 'id' in disk and 'path' in disk and disk['path'] == MON_DISK:
 					if 'role' in disk and disk['role'] == 'mon':

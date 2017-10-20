@@ -133,7 +133,8 @@ def patchDisk(server_id, disk_id, data, wait=True):
 	elif r.status_code == 204:
 		return True
 
-	print('patchDisk failed with status_code %d' % r.status_code)
+	response = r.json()
+	print('patchDisk failed with status_code %d and message %s' % (r.status_code, response['message']))
 	return False
 
 def createJournal(server_id, disk_id, count):
