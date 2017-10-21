@@ -15,7 +15,7 @@ import time
 print('This script will migrate your running cluster from Ceph Kraken (11.2) to Luminous (12.2)!')
 print('If you have any data on your servers, please make sure to backup them before executing this script!')
 if input('Do you want to upgrade the cluster (yes/no)? ') != 'yes':
-	print('breaking up')
+	print('exiting')
 	sys.exit(1)
 
 def executeSshCommand(host, cmd):
@@ -27,9 +27,11 @@ def executeShellCommand(cmd):
 	return subprocess.check_output(['bash', '-c', cmd])
 
 def waitForClusterHealth():
+	print("waiting for 15s for the cluster health...")
+	time.sleep(15)
 	while not checkMonHealth() or not checkPgHealth():
-		print("waiting (15s) for MON and PG health ...")
-		time.sleep(15)
+		print("cluster not yet healthy, checking again in 10 seconds ...")
+		time.sleep(10)
 
 # Verify Ceph Version
 verifyCephCommand('\s((11|12).2.\d+)\s')
@@ -93,7 +95,7 @@ print('-------------------------------------------------------------------------
 for srv in mds_list:
 	print("upgrading MDS on " + srv + "... please wait!")
 	executeSshCommand(srv, "systemctl restart ceph-mds.target")
-	time.sleep(3)
+	time.sleep(10)
 
 # RGW
 for srv in rgw_list:
