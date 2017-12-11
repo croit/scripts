@@ -255,7 +255,7 @@ def checkMonHealth():
 	if 'cephStatus' in response_json and response_json['cephStatus'] is dict and 'quorum' in response_json['cephStatus']:
 		count_cur = len(response_json['cephStatus']['quorum'])
 
-	if count_cur != count_max:
+	if count_cur != count_max or count_cur < 1:
 		return False
 	else:
 		return True
@@ -265,12 +265,18 @@ def checkPgHealth():
 	global API_URL_CLI_STATUS
 	response_json = __CallCliApi(API_URL_CLI_STATUS)
 
+  count=0
 	if 'cephStatus' in response_json and response_json['cephStatus'] is dict and 'pgmap' in response_json['cephStatus'] and 'pgs_by_state' in response_json['cephStatus']['pgmap']:
 		pgstates = response_json['cephStatus']['pgmap']['pgs_by_state']
 		for element in pgstates:
 			if 'state_name' in element and element['state_name'] != 'active+clean':
-				return False;
-	return True;
+				return False
+      else:
+        count += 1
+  if count == 0:
+    return False
+  else:
+  	return True
 
 
 # service can be 'mon', 'osd', 'mds', 'nfs', 'rgw'
