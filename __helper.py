@@ -57,7 +57,7 @@ def adminLogin():
 	payload = "grant_type=client_credentials"
 	headers = { 'content-type': "application/x-www-form-urlencoded" }
 	response = requests.post(API_URL_LOGIN, data=payload, auth=HTTPBasicAuth('admin', 'admin'), headers=headers).json()
-	if 'access_token' in response and 'access_token' in response:
+	if 'access_token' in response:
 		api_auth_token = response['token_type'] + ' ' + response['access_token']
 		writeTokenFile(api_auth_token)
 		return api_auth_token
@@ -65,7 +65,7 @@ def adminLogin():
 		username = input("Username: ")
 		password = input("Password: ")
 		response = requests.post(API_URL_LOGIN, data=payload, auth=HTTPBasicAuth(username, password), headers=headers).json()
-		if 'access_token' in response and 'access_token' in response:
+		if 'access_token' in response:
 			api_auth_token = response['token_type'] + ' ' + response['access_token']
 			writeTokenFile(api_auth_token)
 			return api_auth_token
@@ -87,12 +87,12 @@ def checkLoginToken():
 			return True
 		else:
 			return False
-	
+
 def writeTokenFile(token):
 	with open(".api_token", "w") as token_file:
 		token_file.write(token.strip())
 	return token_file.close()
-	
+
 
 def loadTokenFile():
 	global api_auth_token
@@ -109,13 +109,13 @@ def loadTokenFile():
 			finally:
 				token_file.close()
 	return False
-	
+
 def getRequestHeaders(auth=True):
 	request_headers = {'Content-Type':'application/json'}
 	if auth == True:
 		request_headers['Authorization'] = loadTokenFile()
 	return request_headers
-	
+
 def patchDisk(server_id, disk_id, data, wait=True):
 	global API_URL_DISKS
 	r = patchRequest(API_URL_DISKS % (server_id, disk_id), data)
@@ -156,7 +156,7 @@ def createOsd(server_id, disk_id, journal_disk_id=None, wait=True):
 
 def deleteRequest(url, data={}, auth=True):
 	return requests.delete(url, json=data, headers=getRequestHeaders(auth))
-	
+
 def patchRequest(url, data={}, auth=True):
 	return requests.patch(url, json=data, headers=getRequestHeaders(auth))
 
@@ -178,7 +178,7 @@ def createMonService(server_id, ip=False):
 	global API_URL_CREATE_MON, API_URL_SERVER_SERVICES_MON
 	r = getRequest(API_URL_CREATE_MON)
 	if r.status_code == 200:
-		services = r.json()	
+		services = r.json()
 		if type(services) is list and len(services)>0:
 			for service in services:
 				if 'id' in service and 'ips' in service and len(service['ips'])>0 and service['id'] == server_id:
@@ -247,7 +247,7 @@ def waitForTask(task_id):
 def checkMonHealth():
 	global API_URL_CLI_STATUS
 	response_json = __CallCliApi(API_URL_CLI_STATUS)
-	
+
 	count_max = 0
 	count_cur = 0
 	if 'cephStatus' in response_json and response_json['cephStatus'] is dict and 'monmap' in response_json['cephStatus'] and 'mons' in response_json['cephStatus']['monmap']:
@@ -264,7 +264,7 @@ def checkMonHealth():
 def checkPgHealth():
 	global API_URL_CLI_STATUS
 	response_json = __CallCliApi(API_URL_CLI_STATUS)
-	
+
 	if 'cephStatus' in response_json and response_json['cephStatus'] is dict and 'pgmap' in response_json['cephStatus'] and 'pgs_by_state' in response_json['cephStatus']['pgmap']:
 		pgstates = response_json['cephStatus']['pgmap']['pgs_by_state']
 		for element in pgstates:
@@ -318,5 +318,5 @@ def getAllServers():
 def __CallCliApi(url):
 	r = requests.get(url)
 	return r.json()
-	
+
 
