@@ -6,8 +6,8 @@
 # of the MIT license.  See the LICENSE file for details.
 
 import logging
-import nagiosplugin
 import requests
+import re
 import sys
 import traceback
 import urllib3
@@ -15,25 +15,24 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 from argparse import ArgumentParser
 from requests.auth import HTTPBasicAuth
-from nagiosplugin.state import Ok, Warn, Critical
 
-_log = logging.getLogger('nagiosplugin')
+_log = logging.getLogger('monitoring.nagios')
 
-VERSION = 0.2
+VERSION = 0.3
 
-class croit(nagiosplugin.Resource):
+class croit:
   args = {}
-  API_AUTH_TOKEN = ''
+  api_auth_token = ''
   ceph_health = ''
 
   def __init__(self, args):
       self.args = args
 
-  def api_get_data(self, url):
-    request_headers = {'Content-Type':'application/json', 'Authorization':self.API_AUTH_TOKEN}
+  def get_data(self, url):
+    request_headers = {'Content-Type':'application/json', 'Authorization':self.api_auth_token}
     return requests.get(url, headers=request_headers, verify=self.args.check_cert, timeout=15)
 
-  def api_login(self):
+  def login(self):
     URL = '%s://%s:%d/api/auth/login' % (self.args.protocol, self.args.host, self.args.port)
     _log.info('POST %-50s - trying to login' % URL)
     response = requests.post(URL,
@@ -44,89 +43,31 @@ class croit(nagiosplugin.Resource):
                              timeout=15
                             ).json()
     if 'access_token' in response:
-      self.API_AUTH_TOKEN = response['token_type'] + ' ' + response['access_token']
+      self.api_auth_token = response['token_type'] + ' ' + response['access_token']
       return True
-    raise RuntimeError('API login failed! unable to receive a login token from %s' % URL)
+    raise RuntimeError('API login failed, unable to retrieve a login token from %s' % URL)
 
-  def api_status_backend(self):
-    URL = '%s://%s:%d/api/status' % (self.args.protocol, self.args.host, self.args.port)
-    _log.info('GET  %-50s - get the backend status' % URL)
-    response = self.api_get_data(URL)
-    data = response.json()
-    if response.status_code == 200 and 'status' in data and data['status'] == 'UP':
-      _log.debug(' ==> got True')
-      return True
-    _log.debug(' ==> got False')
-    return False
+  def status_summary(self):
+    return self.get_nagios_output('%s://%s:%d/api/cluster/status/nagios' % (self.args.protocol, self.args.host, self.args.port))
 
-  def api_status_cluster(self):
-    URL = '%s://%s:%d/api/cluster/status' % (self.args.protocol, self.args.host, self.args.port)
-    _log.info('GET  %-50s - get the cluster status' % URL)
-    response = self.api_get_data(URL)
-    data = response.json()
-    self.ceph_health = data
-    if response.status_code == 200:
-      try:
-        if data['cephLastUpdated'] >= self.args.timeout*1000:
-          _log.debug(' ==> Ceph status timeout, %d ms old' % data['cephLastUpdate'])
-          return False
-        elif data['cephStatus']['health']['status'] == 'HEALTH_OK':
-          _log.debug(' ==> reported status HEALTH_OK')
-          return True
-      except:
-        _log.debug(' ==> got unusual json format from API')
-      _log.debug(' ==> reported status is NOT OK')
-      return False
+  def status(self, check):
+    return self.get_nagios_output('%s://%s:%d/api/cluster/status/nagios/%s' % (self.args.protocol, self.args.host, self.args.port, check))
 
-  def ceph_mon_status(self):
-    if type(self.ceph_health) is not dict:
-      print(type(self.ceph_health))
-      print(type(self.ceph_health) is dict)
-      return False
-    try:
-      status = self.ceph_health['cephStatus']
-      if len(status['quorum_names']) < 1:
-        _log.debug(' ==> no mon in quorum_names')
-        return False
-      for mon in status['monmap']['mons']:
-        if mon['name'] not in status['quorum_names']:
-          _log.debug(' ==> mon "%s" is not in quorum_names' % mon.name)
-          return False
-      return True
-    except:
-      _log.debug(' ==> got unusual json format from API')
-      return False
+  def get_nagios_output(self, url):
+    _log.info('GET  %-50s - get the cluster status' % url)
+    response = self.get_data(url)
+    print(response.text)
+    service_state = re.match("^\S+ (\S+)", response.text).group(1)
+    if service_state == "WARNING":
+      return 1
+    elif service_state == "CRITICAL":
+      return 2
+    elif service_state == "UNKNOWN":
+      return 3
+    else:
+      return 0
 
-  def probe(self):
-    return [nagiosplugin.Metric('croit', True, context='croit'),
-            nagiosplugin.Metric('croit_backend', self.api_status_backend(), context='backend'),
-            nagiosplugin.Metric('croit_login', self.api_login(), context='login'),
-            nagiosplugin.Metric('ceph_cluster', self.api_status_cluster(), context='ceph_cluster'),
-            nagiosplugin.Metric('ceph_mon', self.ceph_mon_status(), context='ceph_mon'),
-           ]
 
-class BooleanContext(nagiosplugin.Context):
-  """This context only cares about boolean values.
-  You can specify using the ``critical``-parameter whether
-  a False result should cause a warning or a critical error.
-  Copied from https://github.com/raphaelm/monitoring, MIT license
-  """
-
-  def __init__(self, name, critical=True,
-               fmt_metric='{name} is {value}',
-               result_cls=nagiosplugin.result.Result):
-      self.critical = critical
-      super().__init__(name, fmt_metric, result_cls)
-
-  def evaluate(self, metric, resource):
-      if not metric.value and self.critical:
-          return self.result_cls(Critical, "NOT OK", metric)
-      elif not metric.value and not self.critical:
-          return self.result_cls(Warn, "NOT OK", metric)
-      else:
-          return self.result_cls(Ok, "OK", metric)
-
-@nagiosplugin.guarded
 def main():
   arg_parser = ArgumentParser(description='check_croit_cluster (Version: %s)' % (VERSION))
   arg_parser.add_argument('--version', action='version', version='%s' % (VERSION))
@@ -138,6 +79,7 @@ def main():
   arg_parser.add_argument('--port', type=int, help='connect to port (default=8080/443)')
   arg_parser.add_argument('--user', default='admin', help='username to authenticate', dest='username')
   arg_parser.add_argument('--pass', default='admin', help='password to authenticate', dest='password')
+  arg_parser.add_argument('check', nargs='?', help='The Ceph health check to perform, defaults to the whole cluster status')
   args = arg_parser.parse_args(sys.argv[1:])
   if args.https:
     if args.port is None:
@@ -147,21 +89,13 @@ def main():
     if args.port is None:
       args.port = 8080
     args.protocol = 'http'
+  api_client = croit(args)
+  api_client.login()
+  if args.check is None:
+    return api_client.status_summary()
+  else:
+    return api_client.status(args.check)
 
-  # API login
-  check = nagiosplugin.Check(
-    croit(args),
-    BooleanContext('croit'),
-    BooleanContext('backend'),
-    BooleanContext('login'),
-    BooleanContext('ceph_cluster'),
-    BooleanContext('ceph_mon'),
-    nagiosplugin.Summary()
-  )
-  try:
-    check.main(verbose=args.verbose)
-  except:
-    raise
 
 
 if __name__ == '__main__':
