@@ -20,7 +20,6 @@ CEPHFS_DIR=/
 CEPHFS_TARGET=/mnt/cephfs
 
 apt-get -y update
-apt-get -y upgrade
 apt-get -y install git lsb-release
 
 if grep -qs "${CEPHFS_TARGET} " /proc/mounts; 
